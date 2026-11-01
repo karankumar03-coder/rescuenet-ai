@@ -21,7 +21,7 @@ FALLBACK = {
     "incident_type": "unknown",
     "severity": 5,
     "people_at_risk": 0,
-    "summary": "AI analysis available nahi",
+    "summary": "AI analysis unavailable",
 }
 
 

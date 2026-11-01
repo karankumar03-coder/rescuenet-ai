@@ -80,7 +80,7 @@ def auto_dispatch(db):
                     "incident_id": incident.id,
                     "priority_score": incident.priority_score,
                     "assigned": [],
-                    "note": "Koi khali saadhan nahi mila",
+                    "note": "No available resource found",
                 }
             )
             continue

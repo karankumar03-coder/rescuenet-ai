@@ -82,7 +82,7 @@ def update_status(
 ):
     allowed = ["Pending", "Assigned", "Resolved"]
     if data.status not in allowed:
-        raise HTTPException(status_code=400, detail="Status galat hai")
+        raise HTTPException(status_code=400, detail="Invalid status")
 
     incident = (
         db.query(models.Incident)
@@ -90,7 +90,7 @@ def update_status(
         .first()
     )
     if incident is None:
-        raise HTTPException(status_code=404, detail="Incident nahi mila")
+        raise HTTPException(status_code=404, detail="Incident not found")
 
     incident.status = data.status
 
@@ -122,7 +122,7 @@ def recommend(incident_id: int, db: Session = Depends(get_db)):
         .first()
     )
     if incident is None:
-        raise HTTPException(status_code=404, detail="Incident nahi mila")
+        raise HTTPException(status_code=404, detail="Incident not found")
     return recommend_resources(db, incident)
 
 

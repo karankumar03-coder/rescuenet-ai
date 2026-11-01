@@ -19,7 +19,7 @@ function App() {
   const [suggestions, setSuggestions] = useState({});
   const [assignments, setAssignments] = useState([]);
 
-    const loadIncidents = () => {
+  const loadIncidents = () => {
     fetch(`${API}/incidents`)
       .then((res) => res.json())
       .then((data) => setIncidents(data));
@@ -69,7 +69,7 @@ function App() {
   const dispatchAll = async () => {
     const res = await fetch(`${API}/dispatch`, { method: "POST" });
     const data = await res.json();
-    alert(`${data.length} emergency ko saadhan baante gaye`);
+    alert(`Dispatch complete: ${data.length} incident(s) processed`);
     loadIncidents();
   };
 
@@ -112,11 +112,11 @@ function App() {
       </MapContainer>
 
       <div style={{ border: "1px solid #888", padding: 12, marginBottom: 20 }}>
-        <h3>Naya Emergency Report</h3>
+        <h3>New Emergency Report</h3>
         <textarea
           rows={3}
           style={{ width: "100%" }}
-          placeholder="Kya hua? (Hindi, English ya Hinglish)"
+          placeholder="Describe the emergency (English, Hindi or Hinglish)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -131,13 +131,14 @@ function App() {
           onChange={(e) => setLongitude(e.target.value)}
         />
         <button onClick={submitReport} disabled={loading}>
-          {loading ? "AI analyze kar raha hai..." : "Report Submit Karo"}
+          {loading ? "AI is analyzing..." : "Submit Report"}
         </button>
       </div>
 
-            <button onClick={dispatchAll} style={{ marginBottom: 12 }}>
-        Auto Dispatch (Priority ke hisaab se)
+      <button onClick={dispatchAll} style={{ marginBottom: 12 }}>
+        Auto Dispatch (by priority)
       </button>
+
       {incidents.map((i) => (
         <div
           key={i.id}
@@ -167,12 +168,13 @@ function App() {
               Resolve
             </button>
             <button onClick={() => getSuggestion(i.id)}>
-              Rescue Suggest Karo
+              Suggest Resources
             </button>
           </div>
-                    {assignments.filter((a) => a.incident_id === i.id).length > 0 && (
+
+          {assignments.filter((a) => a.incident_id === i.id).length > 0 && (
             <div style={{ marginTop: 8, background: "#e8f5e9", padding: 8 }}>
-              <b>Bheje gaye saadhan:</b>
+              <b>Dispatched resources:</b>
               {assignments
                 .filter((a) => a.incident_id === i.id)
                 .map((a, idx) => (
@@ -185,13 +187,13 @@ function App() {
 
           {suggestions[i.id] && (
             <div style={{ marginTop: 8, background: "#eef6ff", padding: 8 }}>
-              <b>Sujhaye gaye saadhan:</b>
+              <b>Suggested resources:</b>
               {suggestions[i.id].length === 0 ? (
-                <div>Koi saadhan nahi mila (location ya khali saadhan nahi)</div>
+                <div>No resource found (missing location or none available)</div>
               ) : (
                 suggestions[i.id].map((r) => (
                   <div key={r.resource_id}>
-                    {r.name} ({r.type}) - {r.distance_km} km door
+                    {r.name} ({r.type}) - {r.distance_km} km away
                   </div>
                 ))
               )}
