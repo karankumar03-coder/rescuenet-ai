@@ -54,6 +54,17 @@ Create a PostgreSQL database named `rescuenet`, then:
 
 Open http://localhost:5173
 
+## Demo
+
+Helper scripts (run from the `backend` folder with the virtual environment active):
+
+    python demo_seed.py          # sends 10 sample emergency reports to the API
+    python reset_demo.py         # sets all incidents to Pending and frees all resources
+    python manage_incidents.py   # lists incidents with their IDs
+
+Suggested flow: run `reset_demo.py`, open the dashboard, click **Auto Dispatch**, then **Resolve** one incident and click **Auto Dispatch** again to see freed resources reassigned.
+
+Note: `demo_seed.py` calls the Gemini API once per report, so it is limited by the free-tier daily quota.
 ## Author
 
 Karan Kumar Kanojiya
