@@ -1,13 +1,37 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  Siren,
+  Flame,
+  Ambulance,
+  Car,
+  Waves,
+  AlertTriangle,
+  Send,
+  Zap,
+  CheckCircle2,
+  Clock,
+  Activity,
+  LocateFixed,
+  Truck,
+  MapPin,
+} from "lucide-react";
 
 const API = "http://127.0.0.1:8000";
 
+const TYPE_STYLE = {
+  fire: { Icon: Flame, bg: "#fee2e2", color: "#dc2626" },
+  medical: { Icon: Ambulance, bg: "#dcfce7", color: "#16a34a" },
+  accident: { Icon: Car, bg: "#ffedd5", color: "#ea580c" },
+  flood: { Icon: Waves, bg: "#dbeafe", color: "#2563eb" },
+};
+const DEFAULT_TYPE = { Icon: AlertTriangle, bg: "#f1f5f9", color: "#64748b" };
+
 function priorityColor(score) {
-  if (score >= 60) return "#d32f2f";
-  if (score >= 35) return "#f57c00";
-  return "#388e3c";
+  if (score >= 60) return "#dc2626";
+  if (score >= 35) return "#f59e0b";
+  return "#16a34a";
 }
 
 function App() {
@@ -31,6 +55,20 @@ function App() {
   useEffect(() => {
     loadIncidents();
   }, []);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Your browser does not support location");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude.toFixed(5));
+        setLongitude(pos.coords.longitude.toFixed(5));
+      },
+      () => alert("Could not get location. Please allow location access.")
+    );
+  };
 
   const submitReport = async () => {
     if (!description.trim()) return;
@@ -73,134 +111,220 @@ function App() {
     loadIncidents();
   };
 
+  const count = (status) => incidents.filter((i) => i.status === status).length;
+
   const onMap = incidents.filter(
     (i) => i.latitude !== null && i.longitude !== null
   );
 
+  const stats = [
+    { label: "Total incidents", value: incidents.length, Icon: Activity, bg: "#eef2ff", color: "#4f46e5" },
+    { label: "Pending", value: count("Pending"), Icon: Clock, bg: "#fff4e5", color: "#b45309" },
+    { label: "Assigned", value: count("Assigned"), Icon: Truck, bg: "#eaf1ff", color: "#1d4ed8" },
+    { label: "Resolved", value: count("Resolved"), Icon: CheckCircle2, bg: "#e8f7ee", color: "#15803d" },
+  ];
+
   return (
-    <div style={{ padding: 20, textAlign: "left" }}>
-      <h1>RescueNet AI Dashboard</h1>
-
-      <MapContainer
-        center={[28.55, 77.35]}
-        zoom={11}
-        style={{ height: 350, marginBottom: 20 }}
-      >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {onMap.map((i) => (
-          <CircleMarker
-            key={i.id}
-            center={[i.latitude, i.longitude]}
-            radius={10}
-            pathOptions={{
-              color: priorityColor(i.priority_score),
-              fillOpacity: 0.7,
-            }}
-          >
-            <Popup>
-              <b>{i.incident_type}</b> | Priority: {i.priority_score}
-              <br />
-              {i.ai_summary || i.description}
-              <br />
-              Status: {i.status}
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
-
-      <div style={{ border: "1px solid #888", padding: 12, marginBottom: 20 }}>
-        <h3>New Emergency Report</h3>
-        <textarea
-          rows={3}
-          style={{ width: "100%" }}
-          placeholder="Describe the emergency (English, Hindi or Hinglish)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <input
-          placeholder="Latitude (e.g. 28.62)"
-          value={latitude}
-          onChange={(e) => setLatitude(e.target.value)}
-        />
-        <input
-          placeholder="Longitude (e.g. 77.36)"
-          value={longitude}
-          onChange={(e) => setLongitude(e.target.value)}
-        />
-        <button onClick={submitReport} disabled={loading}>
-          {loading ? "AI is analyzing..." : "Submit Report"}
-        </button>
+    <div className="app">
+      <div className="header">
+        <div className="brand">
+          <div className="logo">
+            <Siren size={24} />
+          </div>
+          <div>
+            <h1>RescueNet AI</h1>
+            <p>AI-powered emergency response coordination</p>
+          </div>
+        </div>
+        <div className="live">
+          <span className="live-dot" />
+          System live
+        </div>
       </div>
 
-      <button onClick={dispatchAll} style={{ marginBottom: 12 }}>
-        Auto Dispatch (by priority)
-      </button>
+      <div className="stats">
+        {stats.map((s) => (
+          <div className="stat-card" key={s.label}>
+            <div className="stat-icon" style={{ background: s.bg, color: s.color }}>
+              <s.Icon size={22} />
+            </div>
+            <div>
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {incidents.map((i) => (
-        <div
-          key={i.id}
-          style={{
-            border: "1px solid #ccc",
-            borderLeft: `8px solid ${priorityColor(i.priority_score)}`,
-            padding: 10,
-            marginBottom: 10,
-            opacity: i.status === "Resolved" ? 0.5 : 1,
-          }}
-        >
-          <b>{i.incident_type}</b> | Severity: {i.severity} | Priority:{" "}
-          {i.priority_score} | {i.status}
-          <p>{i.description}</p>
-          <small>{i.ai_summary}</small>
-          <div style={{ marginTop: 8 }}>
-            <button
-              disabled={i.status !== "Pending"}
-              onClick={() => changeStatus(i.id, "Assigned")}
+      <div className="layout">
+        <div>
+          <div className="card map-wrap">
+            <h3 className="card-title">
+              <MapPin size={18} /> Live emergency map
+            </h3>
+            <MapContainer
+              center={[28.55, 77.35]}
+              zoom={11}
+              style={{ height: 360 }}
             >
-              Assign
-            </button>
-            <button
-              disabled={i.status === "Resolved"}
-              onClick={() => changeStatus(i.id, "Resolved")}
-            >
-              Resolve
-            </button>
-            <button onClick={() => getSuggestion(i.id)}>
-              Suggest Resources
-            </button>
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {onMap.map((i) => (
+                <CircleMarker
+                  key={i.id}
+                  center={[i.latitude, i.longitude]}
+                  radius={10}
+                  pathOptions={{
+                    color: priorityColor(i.priority_score),
+                    fillOpacity: 0.7,
+                  }}
+                >
+                  <Popup>
+                    <b>{i.incident_type}</b> | Priority: {i.priority_score}
+                    <br />
+                    {i.ai_summary || i.description}
+                    <br />
+                    Status: {i.status}
+                  </Popup>
+                </CircleMarker>
+              ))}
+            </MapContainer>
           </div>
 
-          {assignments.filter((a) => a.incident_id === i.id).length > 0 && (
-            <div style={{ marginTop: 8, background: "#e8f5e9", padding: 8 }}>
-              <b>Dispatched resources:</b>
-              {assignments
-                .filter((a) => a.incident_id === i.id)
-                .map((a, idx) => (
-                  <div key={idx}>
-                    {a.resource_name} ({a.resource_type})
-                  </div>
-                ))}
+          <div className="card">
+            <div className="card-head">
+              <h3 className="card-title">
+                <Activity size={18} /> Incidents (highest priority first)
+              </h3>
+              <button className="btn btn-dispatch" onClick={dispatchAll}>
+                <Zap size={16} /> Auto Dispatch
+              </button>
             </div>
-          )}
 
-          {suggestions[i.id] && (
-            <div style={{ marginTop: 8, background: "#eef6ff", padding: 8 }}>
-              <b>Suggested resources:</b>
-              {suggestions[i.id].length === 0 ? (
-                <div>No resource found (missing location or none available)</div>
-              ) : (
-                suggestions[i.id].map((r) => (
-                  <div key={r.resource_id}>
-                    {r.name} ({r.type}) - {r.distance_km} km away
+            {incidents.map((i) => {
+              const t = TYPE_STYLE[i.incident_type] || DEFAULT_TYPE;
+              const TypeIcon = t.Icon;
+              const sent = assignments.filter((a) => a.incident_id === i.id);
+              return (
+                <div
+                  key={i.id}
+                  className={`incident ${i.status === "Resolved" ? "resolved" : ""}`}
+                  style={{ borderLeftColor: priorityColor(i.priority_score) }}
+                >
+                  <div className="incident-top">
+                    <div className="incident-left">
+                      <div className="type-icon" style={{ background: t.bg, color: t.color }}>
+                        <TypeIcon size={20} />
+                      </div>
+                      <div>
+                        <div className="type-name">{i.incident_type}</div>
+                        <div className="stat-label">
+                          Severity {i.severity} | Priority {i.priority_score}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pills">
+                      <span className={`pill pill-${i.status.toLowerCase()}`}>
+                        {i.status}
+                      </span>
+                    </div>
                   </div>
-                ))
-              )}
-            </div>
-          )}
+
+                  <p className="incident-desc">{i.description}</p>
+                  <p className="incident-summary">{i.ai_summary}</p>
+
+                  <div className="actions">
+                    <button
+                      className="btn"
+                      disabled={i.status !== "Pending"}
+                      onClick={() => changeStatus(i.id, "Assigned")}
+                    >
+                      Assign
+                    </button>
+                    <button
+                      className="btn btn-success"
+                      disabled={i.status === "Resolved"}
+                      onClick={() => changeStatus(i.id, "Resolved")}
+                    >
+                      <CheckCircle2 size={14} /> Resolve
+                    </button>
+                    <button className="btn btn-info" onClick={() => getSuggestion(i.id)}>
+                      Suggest resources
+                    </button>
+                  </div>
+
+                  {sent.length > 0 && (
+                    <div className="res-box dispatched">
+                      <b>Dispatched resources</b>
+                      {sent.map((a, idx) => (
+                        <div key={idx}>
+                          {a.resource_name} ({a.resource_type})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {suggestions[i.id] && (
+                    <div className="res-box suggested">
+                      <b>Suggested resources</b>
+                      {suggestions[i.id].length === 0 ? (
+                        <div>No resource found (missing location or none available)</div>
+                      ) : (
+                        suggestions[i.id].map((r) => (
+                          <div key={r.resource_id}>
+                            {r.name} ({r.type}) - {r.distance_km} km away
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      ))}
+
+        <div>
+          <div className="card">
+            <h3 className="card-title">
+              <Siren size={18} /> New emergency report
+            </h3>
+            <div className="form">
+              <textarea
+                rows={4}
+                placeholder="Describe the emergency (English, Hindi or Hinglish)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <div className="form-row">
+                <input
+                  placeholder="Latitude"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                />
+                <input
+                  placeholder="Longitude"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                />
+              </div>
+              <button className="btn" onClick={useMyLocation}>
+                <LocateFixed size={16} /> Use my current location
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={submitReport}
+                disabled={loading}
+              >
+                <Send size={16} />
+                {loading ? "AI is analyzing..." : "Submit report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
