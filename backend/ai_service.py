@@ -8,8 +8,14 @@ from google.genai import types
 load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL = "gemini-3.5-flash"
-MAX_TRIES = 3
+MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+]
+MAX_TRIES = 2
 
 FALLBACK = {
     "incident_type": "unknown",
@@ -34,25 +40,28 @@ Sirf JSON do, is format mein:
   "summary": "one short line summary in English"
 }}
 """
-    for attempt in range(1, MAX_TRIES + 1):
-        try:
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
-                ),
-            )
-            data = json.loads(response.text)
-            return {
-                "incident_type": str(data.get("incident_type", "other")).lower(),
-                "severity": max(1, min(10, int(data.get("severity", 5)))),
-                "people_at_risk": max(0, int(data.get("people_at_risk", 0))),
-                "summary": str(data.get("summary", "")),
-            }
-        except Exception as e:
-            print(f"AI error (koshish {attempt}/{MAX_TRIES}):", e)
-            if attempt < MAX_TRIES:
+    for model in MODELS:
+        for attempt in range(1, MAX_TRIES + 1):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    ),
+                )
+                data = json.loads(response.text)
+                return {
+                    "incident_type": str(data.get("incident_type", "other")).lower(),
+                    "severity": max(1, min(10, int(data.get("severity", 5)))),
+                    "people_at_risk": max(0, int(data.get("people_at_risk", 0))),
+                    "summary": str(data.get("summary", "")),
+                }
+            except Exception as e:
+                msg = str(e)
+                print(f"AI error ({model}, koshish {attempt}/{MAX_TRIES}):", msg[:150])
+                if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                    break
                 time.sleep(2 * attempt)
 
     return dict(FALLBACK)
