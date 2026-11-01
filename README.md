@@ -14,6 +14,16 @@ AI-powered emergency management platform. It classifies emergency reports, estim
 - Auto dispatch for multiple emergencies, highest priority first
 - Works with Hindi, English and Hinglish reports
 
+## Screenshots
+
+**Before dispatch:** all emergencies are pending, ranked by AI priority.
+
+![Dashboard before dispatch](screenshots/dashboard-pending.png)
+
+**After Auto Dispatch:** the highest-priority emergencies get the nearest available resources.
+
+![Dashboard after dispatch](screenshots/dashboard-dispatched.png)
+
 ## Tech Stack
 
 - Backend: Python, FastAPI, SQLAlchemy
